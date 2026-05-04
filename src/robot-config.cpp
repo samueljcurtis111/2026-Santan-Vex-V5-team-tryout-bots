@@ -29,8 +29,14 @@ bool Controller1RightShoulderControlMotorsStopped = true;
 bool DrivetrainNeedsToBeStopped_Controller1 = true;
 int uppercent = 100;
 
+
 void up() {
   uppercent++;
+  Claw.setVelocity(uppercent, percent);
+}
+
+void down() {
+  uppercent--;
   Claw.setVelocity(uppercent, percent);
 }
 
@@ -129,6 +135,8 @@ int rc_auto_loop_function_Controller1() {
       }
 
       Controller1.ButtonUp.pressed(up);
+
+      Controller1.ButtonDown.pressed(down);
 
       if (Controller1.ButtonUp.pressing() && Controller1.ButtonDown.pressing() && Controller1.ButtonLeft.pressing() && Controller1.ButtonRight.pressing()) {
         Arm.setBrake(hold);
