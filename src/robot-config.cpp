@@ -27,6 +27,12 @@ bool RemoteControlCodeEnabled = true;
 bool Controller1LeftShoulderControlMotorsStopped = true;
 bool Controller1RightShoulderControlMotorsStopped = true;
 bool DrivetrainNeedsToBeStopped_Controller1 = true;
+int uppercent = 100;
+
+void up() {
+  uppercent++;
+  Claw.setVelocity(uppercent, percent);
+}
 
 // define a task that will handle monitoring inputs from Controller1
 int rc_auto_loop_function_Controller1() {
@@ -121,6 +127,8 @@ int rc_auto_loop_function_Controller1() {
       if (Controller1.ButtonL2.pressing()) {
         Claw.spin(reverse);
       }
+
+      Controller1.ButtonUp.pressed(up);
 
       if (Controller1.ButtonUp.pressing() && Controller1.ButtonDown.pressing() && Controller1.ButtonLeft.pressing() && Controller1.ButtonRight.pressing()) {
         Arm.setBrake(hold);
