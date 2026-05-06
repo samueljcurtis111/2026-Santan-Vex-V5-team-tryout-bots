@@ -10,10 +10,14 @@ brain  Brain;
 // VEXcode device constructors
 motor leftMotorA = motor(PORT15, ratio6_1, true);
 motor leftMotorB = motor(PORT14, ratio6_1, true);
-motor_group LeftDriveSmart = motor_group(leftMotorA, leftMotorB);
+motor leftMotorC = motor(PORT16, ratio6_1, true);
+motor_group LeftDriveSmart = motor_group(leftMotorA, leftMotorB, leftMotorC);
+
 motor rightMotorA = motor(PORT13, ratio6_1, false);
 motor rightMotorB = motor(PORT12, ratio6_1, false);
-motor_group RightDriveSmart = motor_group(rightMotorA, rightMotorB);
+motor rightMotorC = motor(PORT17, ratio6_1, false);
+motor_group RightDriveSmart = motor_group(rightMotorA, rightMotorB, rightMotorC);
+
 drivetrain Drivetrain = drivetrain(LeftDriveSmart, RightDriveSmart, 219.44, 387.5, 311.12, mm, 0.6);
 controller Controller1 = controller(primary);
 motor Arm = motor(PORT11, ratio18_1, true);
@@ -29,6 +33,10 @@ bool Controller1RightShoulderControlMotorsStopped = true;
 bool DrivetrainNeedsToBeStopped_Controller1 = true;
 int uppercent = 100;
 
+// =========================================================================
+// ADJUST THIS VARIABLE: Change this from 0 to 100 to set max drive speed %
+double maxDriveSpeedPercent = 100.0; 
+// =========================================================================
 
 void up() {
   uppercent++;
@@ -42,15 +50,25 @@ void down() {
 
 // define a task that will handle monitoring inputs from Controller1
 int rc_auto_loop_function_Controller1() {
-  // process the controller input every 20 milliseconds
+  // process the controller input every 10 milliseconds
   // update the motors based on the input values
   while(true) {
     if(RemoteControlCodeEnabled) {
-      // calculate the drivetrain motor velocities from the controller joystick axies
-      // left = Axis3 + Axis4
-      // right = Axis3 - Axis4
-      int drivetrainLeftSideSpeed = Controller1.Axis3.position() + Controller1.Axis4.position();
-      int drivetrainRightSideSpeed = Controller1.Axis3.position() - Controller1.Axis4.position();
+      
+      // Calculate raw values from the controller
+      int rawLeft = Controller1.Axis3.position() + Controller1.Axis4.position();
+      int rawRight = Controller1.Axis3.position() - Controller1.Axis4.position();
+
+      // Cap the raw inputs at 100 and -100 so arcade math doesn't exceed bounds
+      if (rawLeft > 100) rawLeft = 100;
+      if (rawLeft < -100) rawLeft = -100;
+      if (rawRight > 100) rawRight = 100;
+      if (rawRight < -100) rawRight = -100;
+
+      // Apply the max speed percentage
+      int drivetrainLeftSideSpeed = rawLeft * (maxDriveSpeedPercent / 100.0);
+      int drivetrainRightSideSpeed = rawRight * (maxDriveSpeedPercent / 100.0);
+
       int armSpeed = Controller1.Axis2.position();
       double armMin = 12;    // degrees - at limit switch
       double armMax = 740;  // degrees - tune this to your robot
@@ -80,8 +98,6 @@ int rc_auto_loop_function_Controller1() {
         RightDriveSmart.setVelocity(drivetrainRightSideSpeed, percent);
         RightDriveSmart.spin(forward);
       }
-
-
 
       double armPos = Arm.position(degrees);
       double slowZone = 300; // degrees before limit to start slowing
@@ -129,7 +145,6 @@ int rc_auto_loop_function_Controller1() {
         Claw.stop();
       }
 
-
       if (Controller1.ButtonL2.pressing()) {
         Claw.spin(reverse);
       }
@@ -167,8 +182,6 @@ int rc_auto_loop_function_Controller1() {
         RemoteControlCodeEnabled = true;
       }
 
-
-
       Controller1.Screen.clearScreen();
       Controller1.Screen.setCursor(1, 1);
       Controller1.Screen.print("Arm: %.0f", Arm.position(degrees));
@@ -184,8 +197,7 @@ int rc_auto_loop_function_Controller1() {
 
 /**
  * Used to initialize code/tasks/devices added using tools in VEXcode Pro.
- * 
- * This should be called at the start of your int main function.
+ * * This should be called at the start of your int main function.
  */
 void vexcodeInit( void ) {
   task rc_auto_loop_task_Controller1(rc_auto_loop_function_Controller1);
